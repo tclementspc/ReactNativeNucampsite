@@ -1,15 +1,29 @@
-import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { useSelector } from "react-redux";
+import { Animated, Text, View } from "react-native";
 import { Card } from "react-native-elements";
-import { CAMPSITES } from "../shared/campsites";
-import { PROMOTIONS } from "../shared/promotions";
-import { PARTNERS } from "../shared/partners";
+import { baseUrl } from "../shared/baseUrl";
+import Loading from "../components/LoadingComponent";
+import { useEffect, useRef } from "react";
 
-const FeaturedItem = ({ item }) => {
+const FeaturedItem = (props) => {
+  const { item } = props;
+
+  if (props.isLoading) {
+    return <Loading />;
+  }
+
+  if (props.errMess) {
+    return (
+      <View>
+        <Text>{props.errMess}</Text>
+      </View>
+    );
+  }
+
   if (item) {
     return (
       <Card containerStyle={{ padding: 0 }}>
-        <Card.Image source={item.image}>
+        <Card.Image source={{ uri: baseUrl + item.image }}>
           <View style={{ justifyContent: "center", flex: 1 }}>
             <Text style={{ color: "white", textAlign: "center", fontSize: 20 }}>
               {item.name}
@@ -24,20 +38,45 @@ const FeaturedItem = ({ item }) => {
 };
 
 const HomeScreen = () => {
-  const [campsites, setCampsites] = useState(CAMPSITES);
-  const [promotions, setPromotions] = useState(PROMOTIONS);
-  const [partners, setPartners] = useState(PARTNERS);
+  const campsites = useSelector((state) => state.campsites);
+  const promotions = useSelector((state) => state.promotions);
+  const partners = useSelector((state) => state.partners);
 
-  const featCampsite = campsites.find((item) => item.featured);
-  const featPromotion = promotions.find((item) => item.featured);
-  const featPartner = partners.find((item) => item.featured);
+  const scaleValue = useRef(new Animated.Value(0)).current;
+  const scaleAnimation = Animated.timing(scaleValue, {
+    toValue: 1,
+    duration: 1500,
+    useNativeDriver: true,
+  });
+
+  const featCampsite = campsites.campsitesArray.find((item) => item.featured);
+  const featPromotion = promotions.promotionsArray.find(
+    (item) => item.featured
+  );
+  const featPartner = partners.partnersArray.find((item) => item.featured);
+
+  useEffect(() => {
+    scaleAnimation.start();
+  }, []);
 
   return (
-    <ScrollView>
-      <FeaturedItem item={featCampsite} />
-      <FeaturedItem item={featPromotion} />
-      <FeaturedItem item={featPartner} />
-    </ScrollView>
+    <Animated.ScrollView style={{ transform: [{ scale: scaleValue }] }}>
+      <FeaturedItem
+        item={featCampsite}
+        isLoading={campsites.isLoading}
+        errMess={campsites.errMess}
+      />
+      <FeaturedItem
+        item={featPromotion}
+        isLoading={promotions.isLoading}
+        errMess={promotions.errMess}
+      />
+      <FeaturedItem
+        item={featPartner}
+        isLoading={partners.isLoading}
+        errMess={partners.errMess}
+      />
+    </Animated.ScrollView>
   );
 };
 
